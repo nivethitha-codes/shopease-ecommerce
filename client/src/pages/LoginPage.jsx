@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { useLoginMutation } from "../redux/api/usersApiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
+import { loadUserCart } from "../redux/slices/cartSlice";
 import Loader from "../components/Loader";
 
 const LoginPage = () => {
@@ -30,6 +31,7 @@ const LoginPage = () => {
     try {
       const res = await login({ email, password }).unwrap();
       dispatch(setCredentials(res));
+      dispatch(loadUserCart(res._id));
       navigate(redirect);
     } catch (err) {
       toast.error(err?.data?.message || "Login failed");

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useLogoutMutation } from "../redux/api/usersApiSlice";
 import { logout } from "../redux/slices/authSlice";
-import { resetCart } from "../redux/slices/cartSlice";
+import { loadUserCart } from "../redux/slices/cartSlice";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,7 +17,7 @@ const Navbar = () => {
     try {
       await logoutApiCall().unwrap();
       dispatch(logout());
-      dispatch(resetCart());
+      dispatch(loadUserCart(null));
       navigate("/login");
       setMenuOpen(false);
     } catch (err) {

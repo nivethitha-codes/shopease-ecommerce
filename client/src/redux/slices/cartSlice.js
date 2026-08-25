@@ -1,8 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = localStorage.getItem("cart")
-  ? JSON.parse(localStorage.getItem("cart"))
-  : { cartItems: [], shippingAddress: {}, paymentMethod: "COD" };
+const getCartKey = (userId) => (userId ? `cart_${userId}` : "cart_guest");
+
+const getUserInfoFromStorage = () => {
+  const userInfo = localStorage.getItem("userInfo");
+  return userInfo ? JSON.parse(userInfo) : null;
+};
+
+const loadCartForUser = (userId) => {
+  const stored = localStorage.getItem(getCartKey(userId));
+  return stored
+    ? JSON.parse(stored)
+    : { cartItems: [], shippingAddress: {}, paymentMethod: "COD" };
+};
+
+const initialUserInfo = getUserInfoFromStorage();
+const loadedCart = loadCartForUser(initialUserInfo?._id);
+
+const initialState = {
+  ...loadedCart,
+  userId: initialUserInfo?._id || null,
+};
 
 const addDecimals = (num) => Math.round(num * 100) / 100;
 
@@ -18,7 +36,14 @@ const updateCart = (state) => {
     Number(state.taxPrice)
   ).toFixed(2);
 
-  localStorage.setItem("cart", JSON.stringify(state));
+  localStorage.setItem(
+    getCartKey(state.userId),
+    JSON.stringify({
+      cartItems: state.cartItems,
+      shippingAddress: state.shippingAddress,
+      paymentMethod: state.paymentMethod,
+    })
+  );
   return state;
 };
 
@@ -45,25 +70,25 @@ const cartSlice = createSlice({
     },
     saveShippingAddress: (state, action) => {
       state.shippingAddress = action.payload;
-      localStorage.setItem("cart", JSON.stringify(state));
+      updateCart(state);
     },
     savePaymentMethod: (state, action) => {
       state.paymentMethod = action.payload;
-      localStorage.setItem("cart", JSON.stringify(state));
+      updateCart(state);
     },
     clearCartItems: (state) => {
       state.cartItems = [];
-      localStorage.setItem("cart", JSON.stringify(state));
+      updateCart(state);
     },
-    resetCart: (state) => {
-      state.cartItems = [];
-      state.shippingAddress = {};
-      state.paymentMethod = "COD";
-      state.itemsPrice = 0;
-      state.shippingPrice = 0;
-      state.taxPrice = 0;
-      state.totalPrice = 0;
-      localStorage.removeItem("cart");
+    // Called on login/logout — switches to that user's saved cart (or guest cart if userId is null)
+    loadUserCart: (state, action) => {
+      const userId = action.payload;
+      const loaded = loadCartForUser(userId);
+      state.cartItems = loaded.cartItems;
+      state.shippingAddress = loaded.shippingAddress;
+      state.paymentMethod = loaded.paymentMethod;
+      state.userId = userId || null;
+      updateCart(state);
     },
   },
 });
@@ -74,6 +99,6 @@ export const {
   saveShippingAddress,
   savePaymentMethod,
   clearCartItems,
-  resetCart,
+  loadUserCart,
 } = cartSlice.actions;
 export default cartSlice.reducer;
